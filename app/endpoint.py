@@ -8,6 +8,7 @@ from starlette.responses import Response
 
 router = APIRouter()
 
+data_store = []
 
 class EventSchema(BaseModel):
     """Event Schema"""
@@ -27,11 +28,18 @@ def handle_event(
     data: EventSchema,
 ) -> Response:
     print(data)
-
+    data_store.append(data)
     # This is where you implement the AI logic to handle the event
 
     # Return acceptance response
     return Response(
-        content=json.dumps({"message": "Data received!"}),
+        content=json.dumps({"message": "Data received!", "data": [item.model_dump() for item in data_store]}),
         status_code=HTTPStatus.ACCEPTED,
+    )
+
+@router.get("/", dependencies=[])
+def get_data() -> Response:
+    return Response(
+        content=json.dumps({"data": [item.model_dump() for item in data_store]}),
+        status_code=HTTPStatus.OK,
     )
