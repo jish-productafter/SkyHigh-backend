@@ -81,45 +81,41 @@ def fetch_vocab_from_vector_db(query: str, level: str = "A1", n: int = 10) -> li
     else:
         logger.info(f"LanceDB API did not provide table names, using directory scan: {available_tables}")
     
-    # LanceDB table names match directory names, which include .lance extension
-    table_name = dbName + ".lance"
     logger.info(f"Attempting to open table for dbName: {dbName}")
     table = None
     last_error = None
     
-    # Try multiple naming conventions
-    # Priority: 1) Exact match from LanceDB API, 2) dbName without extension, 3) dbName with extension
+    # Build list of table name variants to try
+    # Priority: 1) Exact match from LanceDB API (authoritative), 2) dbName without extension, 3) dbName with .lance extension
     table_name_variants = []
     
+    # If LanceDB API provided table names, prioritize exact matches from the API
     if lancedb_table_names:
-        # First, try exact match from LanceDB API (these are the authoritative names)
-        for lancedb_name in lancedb_table_names:
-            # Exact match (most reliable)
-            if lancedb_name == dbName:
-                table_name_variants.append(lancedb_name)
-                logger.debug(f"Found exact match in LanceDB API: '{lancedb_name}'")
-            # Also check if it matches when we remove .lance from directory name
-            elif lancedb_name == table_name.replace('.lance', ''):
-                table_name_variants.append(lancedb_name)
-                logger.debug(f"Found match in LanceDB API (after removing .lance): '{lancedb_name}'")
-        
-        # If no exact match found, try substring matching as fallback
-        if not table_name_variants:
+        # Check for exact match in API table names (these are authoritative)
+        if dbName in lancedb_table_names:
+            table_name_variants.append(dbName)
+            logger.info(f"Found exact match in LanceDB API: '{dbName}' - will try this first")
+        else:
+            # Try to find a match (case-insensitive or partial)
             for lancedb_name in lancedb_table_names:
-                if dbName == lancedb_name or dbName in lancedb_name:
+                if lancedb_name.lower() == dbName.lower() or dbName in lancedb_name:
                     table_name_variants.append(lancedb_name)
-                    logger.debug(f"Found substring match in LanceDB API: '{lancedb_name}'")
+                    logger.info(f"Found match in LanceDB API: '{lancedb_name}'")
+                    break
     
-    # Add standard variants (try these if API names didn't work)
-    # Note: dbName should match what LanceDB API reports (without .lance)
-    table_name_variants.extend([
-        dbName,      # Without .lance extension (most common case)
-        table_name,  # With .lance extension (for directory-based access)
-    ])
+    # Add standard variants as fallbacks (try these if API names didn't work or weren't available)
+    # Note: LanceDB API typically reports names without .lance extension
+    if dbName not in table_name_variants:
+        table_name_variants.append(dbName)  # Without .lance extension (most common case)
+    
+    # Add .lance variant as last resort (for directory-based access)
+    table_name_with_extension = dbName + ".lance"
+    if table_name_with_extension not in table_name_variants:
+        table_name_variants.append(table_name_with_extension)
     
     # Remove duplicates while preserving order
     seen = set()
-    table_name_variants = [v for v in table_name_variants if not (v in seen or seen.add(v))]
+    table_name_variants = [v for v in table_name_variants if v not in seen and not seen.add(v)]
     
     logger.info(f"Will try table name variants in order: {table_name_variants}")
     
@@ -137,7 +133,7 @@ def fetch_vocab_from_vector_db(query: str, level: str = "A1", n: int = 10) -> li
     if table is None:
         # Provide helpful error message with available tables
         error_msg_parts = [
-            f"Could not open table '{table_name}' or '{dbName}'.",
+            f"Could not open table '{dbName}' or '{table_name_with_extension}'.",
             f"Last error: {last_error}.",
             f"Available table directories: {available_tables}.",
         ]
