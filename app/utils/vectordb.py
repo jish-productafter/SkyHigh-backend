@@ -57,22 +57,80 @@ def fetch_vocab_from_vector_db(query: str, level: str = "A1", n: int = 10) -> li
     
     # List available tables for debugging
     available_tables = [d.name for d in db_path_obj.iterdir() if d.is_dir() and d.name.endswith('.lance')]
-    logger.debug(f"Available LanceDB tables: {available_tables}")
+    logger.info(f"Available LanceDB table directories: {available_tables}")
     
     logger.debug(f"Connecting to LanceDB at path: {db_path} (absolute: {db_path_obj.absolute()})")
     db = connect(db_path)
     
+    # Try to list tables using LanceDB API if available
+    lancedb_table_names = []
+    try:
+        # Try different methods to list tables
+        if hasattr(db, 'table_names'):
+            lancedb_table_names = db.table_names()
+            logger.info(f"LanceDB reports available tables: {lancedb_table_names}")
+        elif hasattr(db, 'list_tables'):
+            lancedb_table_names = db.list_tables()
+            logger.info(f"LanceDB reports available tables: {lancedb_table_names}")
+    except Exception as e:
+        logger.debug(f"Could not list tables via LanceDB API: {e}")
+    
+    # If LanceDB API provided table names, use those; otherwise use directory names
+    if lancedb_table_names:
+        logger.info(f"Using LanceDB API table names: {lancedb_table_names}")
+    else:
+        logger.info(f"LanceDB API did not provide table names, using directory scan: {available_tables}")
+    
     # LanceDB table names match directory names, which include .lance extension
     table_name = dbName + ".lance"
-    logger.debug(f"Attempting to open table: {table_name}")
-    try:
-        table = db.open_table(table_name)
-        logger.debug(f"Successfully opened table: {table_name}")
-    except ValueError as e:
-        # Fallback: try without .lance extension in case LanceDB handles it automatically
-        logger.warning(f"Failed to open table '{table_name}', trying without .lance extension: {e}")
-        table = db.open_table(dbName)
-        logger.debug(f"Successfully opened table: {dbName}")
+    logger.info(f"Attempting to open table: {table_name}")
+    table = None
+    last_error = None
+    
+    # Try multiple naming conventions
+    # If LanceDB API provided table names, try those first
+    table_name_variants = []
+    if lancedb_table_names:
+        # Try exact matches from LanceDB API first
+        for lancedb_name in lancedb_table_names:
+            if dbName in lancedb_name or table_name in lancedb_name:
+                table_name_variants.append(lancedb_name)
+    
+    # Add standard variants
+    table_name_variants.extend([
+        table_name,  # With .lance extension
+        dbName,      # Without .lance extension
+        table_name.replace('.lance', ''),  # Explicitly remove extension
+    ])
+    
+    # Remove duplicates while preserving order
+    seen = set()
+    table_name_variants = [v for v in table_name_variants if not (v in seen or seen.add(v))]
+    
+    for variant in table_name_variants:
+        try:
+            logger.debug(f"Trying table name variant: '{variant}'")
+            table = db.open_table(variant)
+            logger.info(f"Successfully opened table: '{variant}'")
+            break
+        except (ValueError, Exception) as e:
+            last_error = e
+            logger.debug(f"Failed to open table '{variant}': {e}")
+            continue
+    
+    if table is None:
+        # Provide helpful error message with available tables
+        error_msg_parts = [
+            f"Could not open table '{table_name}' or '{dbName}'.",
+            f"Last error: {last_error}.",
+            f"Available table directories: {available_tables}.",
+        ]
+        if lancedb_table_names:
+            error_msg_parts.append(f"LanceDB API reports tables: {lancedb_table_names}.")
+        error_msg_parts.append(f"Database path: {db_path} (absolute: {db_path_obj.absolute()})")
+        error_msg = " ".join(error_msg_parts)
+        logger.error(error_msg)
+        raise FileNotFoundError(error_msg)
     
     # Lazy load model and encode query (model is cached after first use)
     logger.debug("Encoding query using embedding model")
