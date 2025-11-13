@@ -13,7 +13,7 @@ sequenceDiagram
     participant App as Application
     participant API as FastAPI Layer
     participant LLM as AI/LLM Service
-    
+
     App->>API: Send request with data
     API->>API: Validate data
     API->>LLM: Process with AI model
@@ -31,52 +31,159 @@ sequenceDiagram
 
 ## Learn More
 
-Beyond this README, [this tutorial](https://fastapi.tiangolo.com/tutorial/) shows you how to use FastAPI with most of its features, step by step. 
+Beyond this README, [this tutorial](https://fastapi.tiangolo.com/tutorial/) shows you how to use FastAPI with most of its features, step by step.
 
-## Quick Start
+## Quick Start with Docker
 
-1. Clone repository
-    ```bash
-   git clone https://github.com/daveebbelaar/fastapi-tutorial.git
-   ```
+The easiest way to run this application is using Docker. The Dockerfile handles all dependencies, including Whisper models and LanceDB data.
 
-2. Install dependencies:
+### Prerequisites
+
+- [Docker](https://www.docker.com/get-started) installed on your system
+
+### Running the Application
+
+1. **Clone the repository:**
+
    ```bash
-   uv sync
+   git clone https://github.com/jish-productafter/SkyHigh-backend.git
+   cd fastapi-tutorial
    ```
 
-3. Run the application:
+2. **Build the Docker image:**
+
    ```bash
-   cd app
-   uvicorn main:app --reload
+   docker build -t fastapi-tutorial .
    ```
 
-3. Access your API:
+   This will:
+
+   - Install Python 3.12 and all dependencies using `uv`
+   - Install ffmpeg (required for Whisper audio processing)
+   - Download the Whisper base model
+   - Copy your application code and LanceDB data
+   - Set up the runtime environment
+
+3. **Run the container:**
+
+   ```bash
+   docker run -p 8000:8000 --env-file .env fastapi-test
+   ```
+
+   The `-p 8000:8000` flag maps port 8000 from the container to port 8000 on your host machine.
+
+4. **Access your API:**
    - API endpoints: http://localhost:8000/events
    - Interactive docs: http://localhost:8000/docs
+   - Alternative docs: http://localhost:8000/redoc
+
+### Alternative: Using Docker Compose
+
+If you prefer using Docker Compose (simpler for managing containers):
+
+1. **Build and run:**
+
+   ```bash
+   docker-compose up --build
+   ```
+
+2. **Run in detached mode (background):**
+
+   ```bash
+   docker-compose up -d
+   ```
+
+3. **View logs:**
+
+   ```bash
+   docker-compose logs -f
+   ```
+
+4. **Stop the container:**
+   ```bash
+   docker-compose down
+   ```
+
+### Docker Commands Reference
+
+**Build the image:**
+
+```bash
+docker build -t fastapi-tutorial .
+```
+
+**Run the container:**
+
+```bash
+docker run -p 8000:8000 --env-file .env fastapi-test
+```
+
+**Run in detached mode (background):**
+
+```bash
+docker run -d -p 8000:8000 --name fastapi-app fastapi-tutorial
+```
+
+**View logs:**
+
+```bash
+docker logs fastapi-app
+```
+
+**Stop the container:**
+
+```bash
+docker stop fastapi-app
+```
+
+**Remove the container:**
+
+```bash
+docker rm fastapi-app
+```
+
+### What the Dockerfile Does
+
+The Dockerfile automates the entire setup process:
+
+1. **Base Image**: Uses Python 3.12-slim for a lightweight container
+2. **Dependency Management**: Installs `uv` for fast Python package management
+3. **System Dependencies**: Installs ffmpeg required for Whisper audio processing
+4. **Python Dependencies**: Installs all project dependencies from `pyproject.toml` and `uv.lock`
+5. **Model Download**: Pre-downloads the Whisper base model during build (so it's ready at runtime)
+6. **Application Setup**: Copies your application code and verifies LanceDB data directory exists
+7. **Runtime**: Runs uvicorn server on port 8000, accessible from outside the container
+
+This ensures a consistent, reproducible environment across different machines and deployment scenarios.
 
 ### About Uvicorn
 
-Uvicorn is an ASGI server that actually runs your FastAPI application. While FastAPI defines your API structure and logic, Uvicorn is the server that handles HTTP connections and serves your application. 
+Uvicorn is an ASGI server that actually runs your FastAPI application. While FastAPI defines your API structure and logic, Uvicorn is the server that handles HTTP connections and serves your application.
 
 Think of FastAPI as the blueprint for your API, and Uvicorn as the engine that powers it.
 
-The command `uvicorn main:app --reload` means:
+In the Docker container, Uvicorn runs with the command `uv run uvicorn main:app --host 0.0.0.0 --port 8000`, which means:
+
 - `main`: Use the file named `main.py`
 - `:app`: Look for a variable named `app` within that file
-- `--reload`: Automatically restart the server when you change your code (useful during development)
+- `--host 0.0.0.0`: Listen on all network interfaces (required for Docker containers)
+- `--port 8000`: Run on port 8000 inside the container
 
 ### Default Port
 
-By default, Uvicorn runs on port 8000. This means:
-- Your API will be accessible at `http://localhost:8000`
+The application runs on port 8000 inside the Docker container, which is mapped to port 8000 on your host machine via the `-p 8000:8000` flag. This means:
+
+- Your API will be accessible at `http://localhost:8000` from your host machine
 - `localhost` refers to your own computer
 - `8000` is the "door" or port number through which requests can access your API
 
-You can change this with the `--port` flag if needed:
+To use a different port on your host machine, change the port mapping:
+
 ```bash
-uvicorn main:app --port 5000
+docker run -p 5000:8000 fastapi-tutorial
 ```
+
+This maps container port 8000 to host port 5000, so you'd access it at `http://localhost:5000`.
 
 ## Structure
 
@@ -171,6 +278,7 @@ This file:
 #### Key Components:
 
 1. **Pydantic Model**: `EventSchema` defines the structure of valid incoming data:
+
    - `event_id`: A unique identifier for the event
    - `event_type`: The category or type of event
    - `event_data`: A dictionary containing the actual event data
@@ -178,6 +286,7 @@ This file:
 2. **Router Decorator**: `@router.post("/")` creates a POST endpoint at the base path
 
 3. **Request Handler**: `handle_event()` processes incoming data:
+
    - FastAPI automatically validates incoming JSON against `EventSchema`
    - Invalid data will be rejected with appropriate error messages
    - Valid data is passed to our function where we can process it
@@ -229,11 +338,19 @@ async def async_endpoint(data: EventSchema):
 
 ## Testing Your Endpoint
 
-To quickly test your FastAPI endpoint, you can use the `requests.py` file
+To quickly test your FastAPI endpoint, make sure your Docker container is running, then use the `requests.py` file:
+
+```bash
+# Make sure the container is running first
+docker ps
+
+# Run the test script (from your host machine)
+python app/request.py
+```
 
 ### What This Script Does
 
-1. Sets up the endpoint URL where your FastAPI server is running
+1. Sets up the endpoint URL where your FastAPI server is running (assumes `http://localhost:8000`)
 2. Creates a sample event with:
    - A random UUID as the event ID
    - A test event type
@@ -241,13 +358,15 @@ To quickly test your FastAPI endpoint, you can use the `requests.py` file
 3. Sends a POST request to your endpoint
 4. Prints the response status code and body
 
+**Note:** The script assumes your API is running at `http://localhost:8000`. If you're using a different port mapping, update the URL in `request.py`.
+
 ## Understanding API Methods: GET vs POST
 
 If you're new to APIs, think of the difference between GET and POST as similar to the difference between reading and writing.
 
 ### GET: Asking for Information
 
-A GET request is like asking someone a question. When you use GET in an API, you're simply requesting information without changing anything. 
+A GET request is like asking someone a question. When you use GET in an API, you're simply requesting information without changing anything.
 
 For example, checking the weather on a website is a GET request - you're just asking "What's the weather today?" without changing the weather itself.
 
@@ -310,10 +429,10 @@ def handle_event(
     # Validate the token
     if credentials.credentials != API_TOKEN:
         raise HTTPException(
-            status_code=401, 
+            status_code=401,
             detail="Invalid authentication token"
         )
-    
+
     # Process the valid request
     return {"message": "Data received!"}
 ```
@@ -359,17 +478,3 @@ Bearer tokens have become the standard for API authentication because they:
 For production applications, consider using JWT tokens which allow you to include expiration times and additional claims in the token itself.
 
 For more advanced authentication options, refer to the [FastAPI Security documentation](https://fastapi.tiangolo.com/tutorial/security/).
-
-
-
-
-
-Docker build
-```
-docker build -t fastapi-test .
-```
-
-Docker run
-```
-docker run -p 8000:8000 fastapi-test
-```
