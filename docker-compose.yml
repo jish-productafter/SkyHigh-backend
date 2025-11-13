@@ -11,4 +11,8 @@ services:
     restart: unless-stopped
     environment:
       - PYTHONUNBUFFERED=1
+    # Optional: Use volume mount for LanceDB data in production
+    # Uncomment the following lines to use a volume instead of copying files into image
+    # volumes:
+    #   - ./app/utils/lancedb_data:/app/utils/lancedb_data:ro
 

@@ -326,22 +326,41 @@ def fetch_vocab_from_vector_db(query: str, level: str = "A1", n: int = 10) -> li
                 logger.debug(f"Method 7 (lance library) failed: {type(e).__name__}: {e}")
     
     if table is None:
-        # Verify table directory structure
+        # Verify table directory structure and provide detailed diagnostics
         table_dir_path = db_path_obj / (dbName + ".lance")
         if table_dir_path.exists() and table_dir_path.is_dir():
-            logger.info(f"Table directory exists: {table_dir_path}")
+            logger.error(f"Table directory exists but cannot be opened: {table_dir_path}")
             # Check for required LanceDB table structure files
-            manifest_path = table_dir_path / "_versions" / "1.manifest"
-            if manifest_path.exists():
-                logger.info(f"Table manifest found: {manifest_path}")
+            versions_dir = table_dir_path / "_versions"
+            manifest_path = versions_dir / "1.manifest"
+            
+            if not versions_dir.exists():
+                logger.error(f"CRITICAL: _versions directory is missing in {table_dir_path}")
+                logger.error("This indicates the LanceDB table structure is incomplete.")
+                logger.error("Possible causes:")
+                logger.error("  1. Files were not copied correctly during Docker build")
+                logger.error("  2. Table was corrupted or incompletely created")
+                logger.error("  3. File system permissions issue")
             else:
-                logger.warning(f"Table manifest not found at: {manifest_path}")
-                # List what's actually in the directory
-                try:
-                    dir_contents = list(table_dir_path.iterdir())
-                    logger.info(f"Table directory contents: {[d.name for d in dir_contents]}")
-                except Exception as e:
-                    logger.warning(f"Could not list table directory contents: {e}")
+                logger.info(f"_versions directory exists: {versions_dir}")
+                if manifest_path.exists():
+                    logger.info(f"Table manifest found: {manifest_path}")
+                else:
+                    logger.warning(f"Table manifest not found at: {manifest_path}")
+                    try:
+                        version_files = list(versions_dir.iterdir())
+                        logger.info(f"_versions directory contains: {[f.name for f in version_files]}")
+                    except Exception as e:
+                        logger.warning(f"Could not list _versions directory: {e}")
+            
+            # List what's actually in the directory
+            try:
+                dir_contents = list(table_dir_path.iterdir())
+                logger.error(f"Table directory contents: {[d.name for d in dir_contents]}")
+                logger.error("Expected structure: _versions/, _transactions/, data/")
+                logger.error("If _versions is missing, the table cannot be opened.")
+            except Exception as e:
+                logger.warning(f"Could not list table directory contents: {e}")
         
         # Provide helpful error message with available tables
         all_tried = list(set([table_name_to_use, dbName] + (tried_names if tried_names else [])))
