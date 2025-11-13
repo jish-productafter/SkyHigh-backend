@@ -181,7 +181,7 @@ def fetch_vocab_from_vector_db(query: str, level: str = "A1", n: int = 10) -> li
             logger.warning(f"Trying to open table using direct path: {table_dir_path}")
             try:
                 # Try connecting directly to the table directory
-                from lancedb import connect
+                # Note: connect is already imported at the top of the file
                 table_db = connect(str(table_dir_path.parent))
                 table = table_db.open_table(dbName)
                 logger.info(f"Successfully opened table using direct path method")
