@@ -29,7 +29,12 @@ RUN if [ ! -d "utils/lancedb_data" ]; then \
         echo "LanceDB data directory found. Contents:" && \
         ls -la utils/lancedb_data/ && \
         echo "LanceDB tables:" && \
-        find utils/lancedb_data -name "*.lance" -type d | head -10; \
+        find utils/lancedb_data -name "*.lance" -type d | head -10 && \
+        echo "Setting proper permissions for LanceDB data..." && \
+        chmod -R u+rX utils/lancedb_data && \
+        echo "Permissions set. Verifying access..." && \
+        ls -la utils/lancedb_data/ && \
+        echo "LanceDB data directory is ready."; \
     fi
 
 # Use uv to run uvicorn with the correct environment

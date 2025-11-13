@@ -82,58 +82,76 @@ def fetch_vocab_from_vector_db(query: str, level: str = "A1", n: int = 10) -> li
         logger.info(f"LanceDB API did not provide table names, using directory scan: {available_tables}")
     
     logger.info(f"Attempting to open table for dbName: {dbName}")
-    table = None
-    last_error = None
     
-    # Build list of table name variants to try
-    # Priority: 1) Exact match from LanceDB API (authoritative), 2) dbName without extension, 3) dbName with .lance extension
-    table_name_variants = []
+    # Determine the table name to use
+    # Priority: Use exact match from LanceDB API if available (most reliable)
+    table_name_to_use = None
     
-    # If LanceDB API provided table names, prioritize exact matches from the API
     if lancedb_table_names:
         # Check for exact match in API table names (these are authoritative)
         if dbName in lancedb_table_names:
-            table_name_variants.append(dbName)
-            logger.info(f"Found exact match in LanceDB API: '{dbName}' - will try this first")
+            table_name_to_use = dbName
+            logger.info(f"Using exact match from LanceDB API: '{table_name_to_use}'")
         else:
-            # Try to find a match (case-insensitive or partial)
+            # Try to find a case-insensitive match
             for lancedb_name in lancedb_table_names:
-                if lancedb_name.lower() == dbName.lower() or dbName in lancedb_name:
-                    table_name_variants.append(lancedb_name)
-                    logger.info(f"Found match in LanceDB API: '{lancedb_name}'")
+                if lancedb_name.lower() == dbName.lower():
+                    table_name_to_use = lancedb_name
+                    logger.info(f"Using case-insensitive match from LanceDB API: '{table_name_to_use}'")
                     break
     
-    # Add standard variants as fallbacks (try these if API names didn't work or weren't available)
-    # Note: LanceDB API typically reports names without .lance extension
-    if dbName not in table_name_variants:
-        table_name_variants.append(dbName)  # Without .lance extension (most common case)
+    # If no match found in API, use dbName as fallback
+    if table_name_to_use is None:
+        table_name_to_use = dbName
+        logger.info(f"Using table name '{table_name_to_use}' (not found in LanceDB API, using directory-based name)")
     
-    # Add .lance variant as last resort (for directory-based access)
-    table_name_with_extension = dbName + ".lance"
-    if table_name_with_extension not in table_name_variants:
-        table_name_variants.append(table_name_with_extension)
+    # Try to open the table
+    logger.info(f"Attempting to open table: '{table_name_to_use}'")
+    table = None
+    last_error = None
     
-    # Remove duplicates while preserving order
-    seen = set()
-    table_name_variants = [v for v in table_name_variants if v not in seen and not seen.add(v)]
-    
-    logger.info(f"Will try table name variants in order: {table_name_variants}")
-    
-    for variant in table_name_variants:
-        try:
-            logger.debug(f"Trying table name variant: '{variant}'")
-            table = db.open_table(variant)
-            logger.info(f"Successfully opened table: '{variant}'")
-            break
-        except (ValueError, FileNotFoundError, Exception) as e:
-            last_error = e
-            logger.debug(f"Failed to open table '{variant}': {type(e).__name__}: {e}")
-            continue
+    try:
+        table = db.open_table(table_name_to_use)
+        logger.info(f"Successfully opened table: '{table_name_to_use}'")
+    except Exception as e:
+        last_error = e
+        error_type = type(e).__name__
+        error_msg_str = str(e)
+        logger.error(f"Failed to open table '{table_name_to_use}': {error_type}: {error_msg_str}")
+        
+        # If we used the API name and it failed, this is suspicious - try fallback
+        if lancedb_table_names and table_name_to_use in lancedb_table_names:
+            logger.warning(f"LanceDB API reported table '{table_name_to_use}' exists but open_table failed. Trying fallback name '{dbName}'")
+            try:
+                table = db.open_table(dbName)
+                logger.info(f"Successfully opened table using fallback name: '{dbName}'")
+                last_error = None
+            except Exception as e2:
+                logger.error(f"Fallback also failed: {type(e2).__name__}: {e2}")
+                last_error = e2
     
     if table is None:
+        # Verify table directory structure
+        table_dir_path = db_path_obj / (dbName + ".lance")
+        if table_dir_path.exists() and table_dir_path.is_dir():
+            logger.info(f"Table directory exists: {table_dir_path}")
+            # Check for required LanceDB table structure files
+            manifest_path = table_dir_path / "_versions" / "1.manifest"
+            if manifest_path.exists():
+                logger.info(f"Table manifest found: {manifest_path}")
+            else:
+                logger.warning(f"Table manifest not found at: {manifest_path}")
+                # List what's actually in the directory
+                try:
+                    dir_contents = list(table_dir_path.iterdir())
+                    logger.info(f"Table directory contents: {[d.name for d in dir_contents]}")
+                except Exception as e:
+                    logger.warning(f"Could not list table directory contents: {e}")
+        
         # Provide helpful error message with available tables
+        table_name_with_extension = dbName + ".lance"
         error_msg_parts = [
-            f"Could not open table '{dbName}' or '{table_name_with_extension}'.",
+            f"Could not open table '{table_name_to_use}' (tried: '{table_name_to_use}', '{dbName}', '{table_name_with_extension}').",
             f"Last error: {last_error}.",
             f"Available table directories: {available_tables}.",
         ]
