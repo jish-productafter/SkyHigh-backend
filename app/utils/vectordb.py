@@ -26,7 +26,8 @@ postgres_port = os.getenv("POSTGRES_PORT", "5432")
 service_url = f"postgresql://postgres:{postgres_password}@{postgres_host}:{postgres_port}/{postgres_db}"
 
 # Vector client configuration
-embedding_dimensions = 768
+# all-MiniLM-L6-v2 produces 384-dimensional embeddings
+embedding_dimensions = 384
 time_partition_interval = timedelta(days=7)
 
 # Lazy-loaded model cache - only loaded on first use
@@ -63,9 +64,7 @@ def get_embedding(query_text: str):
     model = _get_model()
     # Generate embedding - convert to numpy array
     embedding = model.encode(query_text, convert_to_numpy=True)
-    # Ensure the embedding matches the expected dimensions
-    # Note: all-MiniLM-L6-v2 produces 384 dimensions, but the database expects 768
-    # If there's a mismatch, you may need to use a different model or adjust dimensions
+    # all-MiniLM-L6-v2 produces 384-dimensional embeddings
     return embedding
 
 

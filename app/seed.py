@@ -67,7 +67,8 @@ def seed(json_filename: str, table_name: str = None):
         records.append(record)
 
     # Initialize vector client
-    embedding_dimensions = 768
+    # all-MiniLM-L6-v2 produces 384-dimensional embeddings
+    embedding_dimensions = 384
     time_partition_interval = timedelta(days=7)
 
     vec_client = client.Sync(
