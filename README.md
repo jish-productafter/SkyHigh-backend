@@ -35,7 +35,7 @@ Beyond this README, [this tutorial](https://fastapi.tiangolo.com/tutorial/) show
 
 ## Quick Start with Docker
 
-The easiest way to run this application is using Docker. The Dockerfile handles all dependencies, including Whisper models and LanceDB data.
+The easiest way to run this application is using Docker. The Dockerfile handles all dependencies, including Whisper models.
 
 ### Prerequisites
 
@@ -61,7 +61,7 @@ The easiest way to run this application is using Docker. The Dockerfile handles 
    - Install Python 3.12 and all dependencies using `uv`
    - Install ffmpeg (required for Whisper audio processing)
    - Download the Whisper base model
-   - Copy your application code and LanceDB data
+   - Copy your application code
    - Set up the runtime environment
 
 3. **Run the container:**
@@ -151,7 +151,7 @@ The Dockerfile automates the entire setup process:
 3. **System Dependencies**: Installs ffmpeg required for Whisper audio processing
 4. **Python Dependencies**: Installs all project dependencies from `pyproject.toml` and `uv.lock`
 5. **Model Download**: Pre-downloads the Whisper base model during build (so it's ready at runtime)
-6. **Application Setup**: Copies your application code and verifies LanceDB data directory exists
+6. **Application Setup**: Copies your application code
 7. **Runtime**: Runs uvicorn server on port 8000, accessible from outside the container
 
 This ensures a consistent, reproducible environment across different machines and deployment scenarios.

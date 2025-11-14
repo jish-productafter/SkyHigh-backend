@@ -2,7 +2,7 @@ import json
 import logging
 import os
 from http import HTTPStatus
-
+from dotenv import load_dotenv
 from fastapi import APIRouter, HTTPException
 from utils.prompts import (
     get_listening_prompt,
@@ -12,6 +12,8 @@ from utils.prompts import (
 )
 from openai import OpenAI
 from starlette.responses import Response
+
+load_dotenv()
 
 # Set up logger
 logger = logging.getLogger(__name__)

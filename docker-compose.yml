@@ -1,5 +1,7 @@
 version: "3.8"
 
+name: skyhigh-backend
+
 services:
   api:
     build:
@@ -15,11 +17,28 @@ services:
     # Expose port 8000 to other containers (doesn't bind to host)
     expose:
       - "8000"
+    depends_on:
+      - timescaledb
     restart: unless-stopped
     environment:
       - PYTHONUNBUFFERED=1
       - OPENROUTER_API_KEY=${OPENROUTER_API_KEY}
-    # Use volume mount for LanceDB data (recommended for production)
-    # This ensures the _versions directories are accessible and avoids copy issues
+      - POSTGRES_HOST=timescaledb
+      - POSTGRES_PORT=5432
+      - POSTGRES_DB=${POSTGRES_DB}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+
+  timescaledb:
+    image: timescale/timescaledb-ha:pg16
+    container_name: timescaledb
+    environment:
+      - POSTGRES_DB=${POSTGRES_DB}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+    ports:
+      - "5432:5432"
     volumes:
-      - ./app/utils/lancedb_data:/app/utils/lancedb_data:ro
+      - timescaledb_data:/var/lib/postgresql/data
+    restart: unless-stopped
+
+volumes:
+  timescaledb_data:

@@ -5,6 +5,9 @@ os.environ["TOKENIZERS_PARALLELISM"] = "false"
 
 from fastapi import FastAPI
 from router import router as process_router
+import seed
+
+seed.seedall()
 
 app = FastAPI()
 app.include_router(process_router)
