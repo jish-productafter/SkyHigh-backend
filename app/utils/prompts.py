@@ -69,6 +69,8 @@ CRITICAL REQUIREMENTS:
 - options MUST contain 3 items for MultipleChoice, 2 for RichtigFalsch.
 - correctAnswer MUST be EXACTLY one of the options.
 - No explanations, no prose, no markdown — ONLY the JSON array.
+- Perfectly follow the JSON array structure.
+
 
 Content Rules:
 - Use short, natural, realistic announcements or dialogues.
@@ -149,7 +151,7 @@ CRITICAL REQUIREMENTS:
 - correctAnswer MUST be EXACTLY one of the options.
 - Distractors must be plausible (similar to correct answer but incorrect).
 - No explanations, no prose, no markdown — ONLY the JSON array.
-
+- Perfectly follow the JSON array structure.
 
 Content Rules:
 - Use realistic texts: emails, postcards, advertisements, simple articles, schedules.
@@ -272,7 +274,7 @@ CRITICAL REQUIREMENTS:
 - content_points: List 3 key information points that MUST be included in response.
 - evaluation_criteria MUST define how to assess: task completion, vocabulary, grammar, coherence.
 - No explanations, no prose, no markdown — ONLY the JSON array.
-
+- Perfectly follow the JSON array structure.
 
 Content Rules:
 - Use realistic everyday scenarios: work, travel, shopping, family, hobbies, complaints, requests, opinions.
@@ -397,7 +399,7 @@ CRITICAL REQUIREMENTS:
 - grammar_structures_required: List expected grammar (e.g., "Present tense", "Modal verbs", "Past tense + present").
 - example_response: Provide a 1-3 sentence model response at appropriate level.
 - No explanations, no prose, no markdown — ONLY the JSON array.
-
+- Perfectly follow the JSON array structure.
 
 Content Rules:
 - Use realistic everyday scenarios: introductions, shopping, travel, work, complaints, opinions, advice.
