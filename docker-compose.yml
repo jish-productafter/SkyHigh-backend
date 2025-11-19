@@ -38,6 +38,10 @@ services:
     # For local development, add to docker-compose.local.yml if needed
     # ports:
     #   - "5432:5432"
+
+    # Expose port 5432 to other containers
+    expose:
+      - "5432"
     volumes:
       - timescaledb_data:/var/lib/postgresql/data
     restart: unless-stopped
