@@ -28,7 +28,7 @@ def get_listening_prompt(topic, level="A1", item_id_start=1, prefer_type="Multip
 Task:
 Generate EXACTLY 10 listening comprehension items for CEFR {level}.
 Each item must be of type "{prefer_type}" unless clearly unsuitable, then use "RichtigFalsch".
-The output MUST be a SINGLE JSON ARRAY with 10 objects. No text before or after the JSON.
+The output MUST be a SINGLE JSON ARRAY with 5 objects. No text before or after the JSON.
 
 Inputs:
 - vocab_list: {json.dumps(vocab_list, ensure_ascii=False)}
@@ -59,7 +59,7 @@ JSON ARRAY STRUCTURE (exact):
     }}
   }},
   ...
-]  <-- exactly 10 objects
+]  <-- exactly 5 objects
   
 
 CRITICAL REQUIREMENTS:
@@ -71,7 +71,7 @@ CRITICAL REQUIREMENTS:
 - No explanations, no prose, no markdown — ONLY the JSON array.
 - Perfectly follow the JSON array structure.
 - The output MUST be valid JSON.
-- The JSON MUST be a single array with EXACTLY 10 objects.
+- The JSON MUST be a single array with EXACTLY 5 objects.
 - The JSON MUST contain:
     * no trailing commas
     * no comments
@@ -87,7 +87,7 @@ Content Rules:
 CEFR Level Specific Rules:
 {level_rules}
 
-Return ONLY the JSON array with 10 objects.
+Return ONLY the JSON array with 5 objects.
 """
     logger.debug(f"Generated prompt (length: {len(prompt)} characters)")
     logger.info("Listening prompt generated successfully")
@@ -115,7 +115,7 @@ def get_reading_prompt(topic, level="A1", item_id_start=1, prefer_type="Multiple
 Task:
 Generate EXACTLY 8 reading comprehension items for CEFR {level}.
 Each item must be of type "{prefer_type}" unless clearly unsuitable, then use "RichtigFalsch".
-The output MUST be a SINGLE JSON ARRAY with 8 objects. No text before or after the JSON.
+The output MUST be a SINGLE JSON ARRAY with 5 objects. No text before or after the JSON.
 
 
 Inputs:
@@ -148,7 +148,7 @@ JSON ARRAY STRUCTURE (exact):
     }}
   }},
   ...
-]  <-- exactly 8 objects
+]  <-- exactly 5 objects
 
 
 CRITICAL REQUIREMENTS:
@@ -161,7 +161,7 @@ CRITICAL REQUIREMENTS:
 - No explanations, no prose, no markdown — ONLY the JSON array.
 - Perfectly follow the JSON array structure.
 - The output MUST be valid JSON.
-- The JSON MUST be a single array with EXACTLY 8 objects.
+- The JSON MUST be a single array with EXACTLY 5 objects.
 - The JSON MUST contain:
     * no trailing commas
     * no comments
@@ -179,7 +179,7 @@ CEFR Level Specific Rules and Question Types:
 {level_rules}
 
 
-Return ONLY the JSON array with 8 objects.
+Return ONLY the JSON array with 5 objects.
 """
     logger.debug(f"Generated prompt (length: {len(prompt)} characters)")
     logger.info("Reading prompt generated successfully")
@@ -367,7 +367,7 @@ B2 LEVEL:
     prompt = f"""
 Task:
 Generate EXACTLY 6 speaking tasks for CEFR {level}.
-The output MUST be a SINGLE JSON ARRAY with 6 objects. No text before or after the JSON.
+The output MUST be a SINGLE JSON ARRAY with 5 objects. No text before or after the JSON.
 
 
 Inputs:
@@ -412,7 +412,7 @@ JSON ARRAY STRUCTURE (exact):
     }}
   }},
   ...
-]  <-- exactly 6 objects
+]  <-- exactly 5 objects
 
 
 CRITICAL REQUIREMENTS:
@@ -425,7 +425,7 @@ CRITICAL REQUIREMENTS:
 - No explanations, no prose, no markdown — ONLY the JSON array.
 - Perfectly follow the JSON array structure.
 - The output MUST be valid JSON.
-- The JSON MUST be a single array with EXACTLY 6 objects.
+- The JSON MUST be a single array with EXACTLY 5 objects.
 - The JSON MUST contain:
     * no trailing commas
     * no comments
@@ -450,7 +450,7 @@ Evaluation_Criteria Guidelines:
 - interaction_ability: Can student engage? Respond to follow-ups naturally?
 
 
-Return ONLY the JSON array with 6 objects.
+Return ONLY the JSON array with 5 objects.
 """
     logger.debug(f"Generated prompt (length: {len(prompt)} characters)")
     logger.info("Speaking prompt generated successfully")
