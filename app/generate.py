@@ -19,12 +19,15 @@ load_dotenv()
 # Set up logger
 logger = logging.getLogger(__name__)
 
-api_key = os.getenv("OPENROUTER_API_KEY")
+api_key = os.getenv("OPENAI_API_KEY")
 if not api_key:
-    raise ValueError("OPENROUTER_API_KEY environment variable is not set")
+    raise ValueError("OPENAI_API_KEY environment variable is not set")
 
+base_url = os.getenv("OPENAI_BASE_URL")
+if not base_url:
+    raise ValueError("OPENAI_BASE_URL environment variable is not set")
 client = OpenAI(
-    base_url="https://openrouter.ai/api/v1",
+    base_url=base_url,
     api_key=api_key,
 )
 
@@ -73,6 +76,18 @@ def generate_listening(topic: str, level: str = "A1"):
             model=model_name,
             messages=[{"role": "user", "content": prompt}],
         )
+
+        # Log token usage (prompt, completion, total) for this call
+        if getattr(response, "usage", None):
+            logger.info(
+                "Token usage for /listening - prompt_tokens=%s, completion_tokens=%s, total_tokens=%s",
+                getattr(response.usage, "prompt_tokens", None),
+                getattr(response.usage, "completion_tokens", None),
+                getattr(response.usage, "total_tokens", None),
+            )
+        else:
+            logger.warning("Token usage not provided for /listening response")
+
         logger.debug("Received response from OpenAI API")
 
         # Error handling: Check if response has choices
@@ -165,6 +180,18 @@ def generate_reading(
             model=model_name,
             messages=[{"role": "user", "content": prompt}],
         )
+
+        # Log token usage (prompt, completion, total) for this call
+        if getattr(response, "usage", None):
+            logger.info(
+                "Token usage for /reading - prompt_tokens=%s, completion_tokens=%s, total_tokens=%s",
+                getattr(response.usage, "prompt_tokens", None),
+                getattr(response.usage, "completion_tokens", None),
+                getattr(response.usage, "total_tokens", None),
+            )
+        else:
+            logger.warning("Token usage not provided for /reading response")
+
         logger.debug("Received response from OpenAI API")
 
         # Error handling: Check if response has choices
@@ -254,6 +281,18 @@ def generate_writing(
             model=model_name,
             messages=[{"role": "user", "content": prompt}],
         )
+
+        # Log token usage (prompt, completion, total) for this call
+        if getattr(response, "usage", None):
+            logger.info(
+                "Token usage for /writing - prompt_tokens=%s, completion_tokens=%s, total_tokens=%s",
+                getattr(response.usage, "prompt_tokens", None),
+                getattr(response.usage, "completion_tokens", None),
+                getattr(response.usage, "total_tokens", None),
+            )
+        else:
+            logger.warning("Token usage not provided for /writing response")
+
         logger.debug("Received response from OpenAI API")
 
         # Error handling: Check if response has choices
@@ -346,6 +385,18 @@ def generate_speaking(
             model=model_name,
             messages=[{"role": "user", "content": prompt}],
         )
+
+        # Log token usage (prompt, completion, total) for this call
+        if getattr(response, "usage", None):
+            logger.info(
+                "Token usage for /speaking - prompt_tokens=%s, completion_tokens=%s, total_tokens=%s",
+                getattr(response.usage, "prompt_tokens", None),
+                getattr(response.usage, "completion_tokens", None),
+                getattr(response.usage, "total_tokens", None),
+            )
+        else:
+            logger.warning("Token usage not provided for /speaking response")
+
         logger.debug("Received response from OpenAI API")
 
         # Error handling: Check if response has choices
